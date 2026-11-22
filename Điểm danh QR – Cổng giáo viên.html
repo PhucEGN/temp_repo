@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Điểm danh QR – Giáo viên</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm, practical school-office tool for teachers on duty
+   IDEA: the student ID card and the class roll book
+   PICTURE: the working scanner + roll list itself
+   COLOUR and TYPE: navy ground panels, status green/amber/red with labels; Be Vietnam Pro
+   LAYOUT: sidebar on PC, bottom tab bar on phone, one calm column of cards */
+:root{color-scheme:light dark;
+--bg:light-dark(#F3F5F8,#0B1220);--card:light-dark(#FFFFFF,#131D2E);--ink:light-dark(#0E1726,#E8EDF5);
+--mute:light-dark(#556274,#9EACC0);--line:light-dark(#E2E7EE,#26344C);--soft:light-dark(#F3F5F8,#1A263A);
+--brand:light-dark(#1E4E8C,#9CC0EC);--btn:light-dark(#0F2744,#2D5C97);
+--okb:light-dark(#ECF7EF,#13301F);--ok:light-dark(#14532D,#8BE3AA);
+--wb:light-dark(#FEF6E6,#33260C);--w:light-dark(#7A4A06,#F7C96B);
+--bb:light-dark(#FDECEC,#3A1616);--b:light-dark(#8F1515,#FFA3A3)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 'Be Vietnam Pro',system-ui,sans-serif;overflow-x:clip}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #F2B33D;outline-offset:2px}
+.shell{display:flex;min-height:100vh}
+.side{width:248px;flex:none;background:#0F2744;color:#E6ECF5;padding:24px 14px;display:flex;flex-direction:column;gap:24px;position:sticky;top:0;height:100vh}
+.logo{display:flex;gap:12px;align-items:center;padding:0 8px}
+.logo i{width:40px;height:40px;border-radius:10px;background:#F2B33D;display:grid;place-items:center;flex:none}
+.logo b{display:block;font-size:15px}.logo small{color:#A9B8CF;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav a{display:flex;gap:12px;align-items:center;padding:12px;border-radius:10px;color:#C9D5E6;text-decoration:none;font-size:15px}
+.nav a.on{background:#1E3D63;color:#fff;font-weight:600}
+.me{margin-top:auto;display:flex;gap:10px;align-items:center;padding:12px;border-radius:12px;background:#1A3456;font-size:13px}
+.me small{display:block;color:#A9B8CF;font-size:12px}
+.av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;flex:none;background:#8FB3E0;color:#0F2744}
+.linkbtn{background:none;border:0;color:#C9D5E6;text-decoration:underline;cursor:pointer;font-size:13px;padding:6px 8px;text-align:left}
+main{flex:1;padding:28px clamp(16px,3vw,36px) 110px;display:flex;flex-direction:column;gap:20px;max-width:1240px}
+.top{display:none}
+.tabbar{display:none}
+h1{margin:0;font-size:clamp(24px,3vw,30px);line-height:1.15;font-weight:800;text-wrap:balance}
+h2{margin:0;font-size:17px;font-weight:700}
+.sub{color:var(--mute);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-items:start}
+.stats{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.st{border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);background:var(--card)}
+.st b{font-size:32px;line-height:1.1;font-weight:800}.st span{font-size:13px;font-weight:600}
+.st.ok{background:var(--okb);color:var(--ok);border-color:transparent}
+.st.w{background:var(--wb);color:var(--w);border-color:transparent}
+.st.b{background:var(--bb);color:var(--b);border-color:transparent}
+.st.p{border-style:dashed}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:10px 18px;border-radius:12px;border:0;background:var(--btn);color:#fff;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--card);color:var(--b);border:1px solid var(--b)}
+.btn.big{min-height:64px;font-size:17px;width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1 1 auto}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{min-height:44px;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-weight:600;font-size:14px}
+.seg button.on{background:var(--btn);color:#fff;border-color:transparent}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:var(--mute)}
+input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{font-size:16px;min-height:46px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+textarea{min-height:90px;resize:vertical}
+.bar{height:10px;border-radius:999px;background:var(--soft);overflow:hidden}.bar i{display:block;height:100%;background:#2E9E5B;border-radius:999px;transition:width .3s}
+.res{display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px}
+.res.ok{background:var(--okb);color:var(--ok)}.res.b{background:var(--bb);color:var(--b)}.res.w{background:var(--wb);color:var(--w)}
+.ph{width:56px;height:68px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:18px;flex:none;background:var(--card);color:var(--brand);border:2px dashed currentColor}
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:0}
+.li .n{flex:1;display:flex;flex-direction:column}.li .n small{color:var(--mute);font-size:12px}
+.chip{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}
+.chip.ok{background:var(--okb);color:var(--ok)}.chip.w{background:var(--wb);color:var(--w)}.chip.b{background:var(--bb);color:var(--b)}.chip.m{background:var(--soft);color:var(--mute)}
+.pick{display:flex;gap:6px}
+.pick button{min-height:44px;padding:6px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:13px;font-weight:600}
+.pick button.onw{background:var(--wb);color:var(--w);border:2px solid currentColor}
+.pick button.onb{background:var(--bb);color:var(--b);border:2px solid currentColor}
+.x{min-width:44px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;color:var(--mute)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{color:var(--mute);font-weight:600;padding:8px 6px;text-align:center;white-space:nowrap}
+td{padding:6px;text-align:center;border-top:1px solid var(--line)}
+td:first-child,th:first-child{text-align:left;position:sticky;left:0;background:var(--card);white-space:nowrap;font-weight:500}
+.m{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;font-weight:800;font-size:13px}
+.m.o{background:var(--okb);color:var(--ok)}.m.p{background:var(--wb);color:var(--w)}.m.k{background:var(--bb);color:var(--b)}.m.n{background:var(--soft);color:var(--mute)}
+.types{display:flex;flex-direction:column;gap:8px}
+.types button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;min-height:54px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer}
+.types button.on{border:2px solid var(--brand)}
+.types small{color:var(--mute);font-size:12px;display:block}
+.thumb{width:84px;height:84px;border-radius:10px;object-fit:cover;border:1px solid var(--line)}
+.cards{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
+.idc{border-radius:16px;overflow:hidden;background:#fff;color:#0E1726;border:1px solid var(--line);display:flex;flex-direction:column}
+.idc header{background:#0F2744;color:#fff;padding:10px 14px;display:flex;justify-content:space-between;font-size:12px;font-weight:800}
+.idc header span{color:#F2B33D}
+.idc .bd{display:flex;gap:12px;padding:14px;align-items:center}
+.idc .qr{width:104px;height:104px;flex:none;padding:6px;border:1px solid #D5DDE7;border-radius:8px;background:#fff}
+.idc .qr svg{width:100%;height:100%;display:block}
+.idc .in{flex:1;display:flex;flex-direction:column;gap:2px;font-size:13px;color:#3D4A5C}
+.idc .in b{font-size:15px;color:#0E1726}
+.idc footer{border-top:1px solid #E2E7EE;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:#556274}
+.idc footer button{min-height:40px;border-radius:8px;border:1px solid #E8B4B4;background:#fff;color:#8F1515;font-weight:600;font-size:12px;padding:6px 10px;cursor:pointer}
+pre.rep{white-space:pre-wrap;background:var(--soft);border-radius:12px;padding:14px;margin:0;font:14px/1.55 'Be Vietnam Pro',sans-serif}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:#0E1726;color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:20;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:#0F2744}
+.login form{width:min(420px,100%);background:var(--card);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:16px}
+.demo{font-size:12px;color:var(--mute)}
+@media(max-width:860px){
+ .side{display:none}
+ .top{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#0F2744;color:#fff;margin:-28px calc(-1*clamp(16px,3vw,36px)) 0;padding:14px 16px}
+ .top b{font-size:15px}.top small{display:block;color:#A9B8CF;font-size:12px}
+ .top button{min-height:44px;border-radius:10px;border:1px solid #2D4A70;background:#1A3456;color:#fff;padding:6px 12px;font-size:13px;cursor:pointer}
+ .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+ .tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;min-height:60px;font-size:11px;color:var(--mute);text-decoration:none;font-weight:600}
+ .tabbar a.on{color:var(--brand)}
+ .toast{bottom:84px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+{
+const NAMES=['Nguyễn Văn An','Trần Thị Bích','Lê Hoàng Long','Phạm Gia Bảo','Đỗ Thảo My','Vũ Quang Huy','Hoàng Minh Khôi','Bùi Ngọc Anh','Đặng Thu Hà','Ngô Đức Mạnh','Dương Khánh Linh','Lý Tuấn Kiệt','Trịnh Bảo Ngọc','Phan Thành Đạt','Mai Phương Thảo','Hồ Quốc Việt','Cao Minh Châu','Lương Hải Đăng','Tạ Thùy Dung','Đinh Công Sơn','Võ Hoài Nam','Lê Minh Đức','Chu Hà Vy','Kiều Anh Tú','Tô Gia Hân','Quách Trọng Nhân','La Yến Nhi','Thái Bảo Long','Nghiêm Tú Anh','Âu Đình Phúc','Hà Lan Chi'];
+const LS='ddqr-demo-v1';
+const SESS=[['sang','Sáng'],['chieu','Chiều'],['toi','Tối']];
+const VT=[['Không gấp chăn màn vuông khối',5,2],['Đi muộn giờ tập trung',3,1],['Sai tác phong, trang phục',2,1],['Dùng điện thoại sai giờ',5,2],['Mất trật tự giờ nghỉ',3,1]];
+const DOW=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'],SD=['CN','T2','T3','T4','T5','T6','T7'];
+const pad=n=>String(n).padStart(2,'0');
+const dkey=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>dkey(new Date());
+const hm=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+const ddmm=k=>k.slice(8,10)+'/'+k.slice(5,7);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ini=n=>{const p=n.split(' ');return (p[p.length-2][0]+p[p.length-1][0]).toUpperCase()};
+const vnDate=d=>DOW[d.getDay()]+', '+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+const curSess=()=>{const h=new Date().getHours();return h<12?'sang':h<18?'chieu':'toi'};
+const sessName=k=>SESS.find(s=>s[0]===k)[1];
+
+function seed(){
+  const students=NAMES.map((n,i)=>({id:'10B-'+String(i+1).padStart(3,'0'),name:n,room:String(301+Math.floor(i/8)),cardV:1}));
+  const att={},now=new Date();
+  for(let d=1;d<=6;d++){
+    const dt=new Date(now);dt.setDate(now.getDate()-d);
+    const r={present:{},absent:{},sent:true};
+    students.forEach((s,i)=>{const h=(i*31+d*17)%29;
+      if(i===21&&(d===2||d===5))r.absent[s.id]='k';else if(h===0)r.absent[s.id]='p';else r.present[s.id]='06:'+pad(40+(i+d)%9);});
+    att[dkey(dt)+'_sang']=r;
+  }
+  const t=today(),y=new Date(now);y.setDate(now.getDate()-1);
+  return {v:1,login:false,students,att,
+    leaves:[{id:124,sid:'10B-004',from:t,to:t,reason:'Phụ huynh đón đi khám răng',status:'ok'}],
+    vios:[{id:1,sid:'10B-022',type:0,ind:5,room:2,date:dkey(y),time:'05:40',note:'Báo động sáng',photo:''}],
+    nextLeave:125,nextVio:2};
+}
+let S=null;try{S=JSON.parse(localStorage.getItem(LS))}catch(e){}
+if(!S||S.v!==1)S=seed();
+const save=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
+let sess=curSess(),last=null,report=null,vType=0,vPhoto='',cardQ='';
+
+const stu=id=>S.students.find(s=>s.id===id);
+const rec=(date,k)=>S.att[date+'_'+k]||(S.att[date+'_'+k]={present:{},absent:{},sent:false});
+const peek=(date,k)=>S.att[date+'_'+k]||{present:{},absent:{},sent:false};
+const leaveOf=(sid,date)=>S.leaves.find(l=>l.sid===sid&&l.status==='ok'&&l.from<=date&&l.to>=date);
+function stats(date,k){const r=peek(date,k);let p=0,ex=0,un=0,pend=0;
+  S.students.forEach(s=>{if(r.present[s.id])p++;else if(leaveOf(s.id,date)||r.absent[s.id]==='p')ex++;else if(r.absent[s.id]==='k')un++;else pend++;});
+  return {p,ex,un,pend};}
+const payload=s=>'QRDD|'+s.id+'|v'+s.cardV;
+
+const I={
+ home:'<path d="M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z"/>',
+ scan:'<path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4M7 12h10"/>',
+ leave:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/>',
+ vio:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+ card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h4v4H6zM14 10h4M14 14h3"/>',
+ cam:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'
+};
+const ic=(k,s=20)=>'<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[k]+'</svg>';
+const NAV=[['tong-quan','Tổng quan','home'],['diem-danh','Điểm danh','scan'],['phieu-phep','Phiếu phép','leave'],['vi-pham','Vi phạm','vio'],['the-qr','Thẻ QR','card']];
+
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2600);}
+
+function qrSvg(text){
+  if(!window.qrcode)return '<svg viewBox="0 0 10 10"><text x="5" y="6" font-size="2" text-anchor="middle">QR</text></svg>';
+  const q=qrcode(0,'M');q.addData(text);q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true});
+}
+
+/* ---------- views ---------- */
+function vLogin(){
+  return '<div class="login"><form id="loginForm"><div class="logo" style="padding:0"><i>'+ic('card',22).replace('currentColor','#0F2744')+'</i><div><b style="font-size:18px">Điểm danh QR</b><small style="color:var(--mute)">Cổng giáo viên</small></div></div>'+
+  '<h1 style="font-size:24px">Đăng nhập</h1>'+
+  '<label class="f">Email giáo viên<input type="email" id="em" value="gv.trang@truong.edu.vn" autocomplete="username"></label>'+
+  '<label class="f">Mật khẩu<input type="password" id="pw" value="demo1234" autocomplete="current-password"></label>'+
+  '<button class="btn big" type="submit">Đăng nhập</button>'+
+  '<p class="demo">Bản trình bày: tài khoản và dữ liệu là mẫu. Bản thật dùng tài khoản do Hiệu trưởng cấp.</p></form></div>';
+}
+
+function vHome(){
+  const t=today(),st=stats(t,sess),now=new Date();
+  const days=[];for(let d=6;d>=0;d--){const x=new Date(now);x.setDate(now.getDate()-d);days.push(x);}
+  const head='<tr><th>Học sinh</th>'+days.map(d=>'<th>'+SD[d.getDay()]+'<br><small>'+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'</small></th>').join('')+'</tr>';
+  const rows=S.students.map(s=>'<tr><td>'+esc(s.name)+'</td>'+days.map(d=>{const k=dkey(d),r=peek(k,'sang');
+    if(r.present[s.id])return '<td><span class="m o" title="Có mặt '+r.present[s.id]+'">✓</span></td>';
+    if(leaveOf(s.id,k)||r.absent[s.id]==='p')return '<td><span class="m p" title="Có phép">P</span></td>';
+    if(r.absent[s.id]==='k')return '<td><span class="m k" title="Không lý do">K</span></td>';
+    return '<td><span class="m n">–</span></td>';}).join('')+'</tr>').join('');
+  const wk=S.vios.filter(v=>v.date>=dkey(days[0])).slice().reverse();
+  return '<div><div class="sub">'+vnDate(now)+' · Buổi '+sessName(sess).toLowerCase()+'</div><h1>Lớp 10B · '+S.students.length+' học sinh</h1></div>'+
+  '<div class="seg" role="group" aria-label="Chọn buổi">'+SESS.map(s=>'<button data-act="sess" data-k="'+s[0]+'" class="'+(s[0]===sess?'on':'')+'">Buổi '+s[1].toLowerCase()+'</button>').join('')+'</div>'+
+  '<div class="stats">'+
+   '<div class="st ok"><span>Có mặt</span><b>'+st.p+'</b></div>'+
+   '<div class="st w"><span>Vắng có phép</span><b>'+st.ex+'</b></div>'+
+   '<div class="st b"><span>Vắng không lý do</span><b>'+st.un+'</b></div>'+
+   '<div class="st p"><span>Chưa điểm danh</span><b>'+st.pend+'</b></div></div>'+
+  '<div class="row"><a class="btn big" href="#diem-danh">'+ic('scan',22)+(peek(t,sess).sent?'Xem lại điểm danh buổi này':'Bắt đầu điểm danh')+'</a></div>'+
+  '<div class="grid"><section class="card" style="grid-column:1/-1"><div class="row" style="justify-content:space-between"><h2 style="flex:none">Bảng điểm danh 7 ngày (buổi sáng)</h2><span class="sub" style="flex:none">✓ có mặt · P có phép · K không lý do</span></div>'+
+  '<div class="scroll"><table><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div></section>'+
+  '<section class="card"><h2>Vi phạm trong tuần</h2><div class="list">'+(wk.length?wk.map(v=>{const s=stu(v.sid);return '<div class="li"><div class="av">'+ini(s.name)+'</div><div class="n"><b>'+esc(s.name)+'</b><small>'+esc(VT[v.type][0])+' · '+ddmm(v.date)+' '+v.time+'</small></div><span class="chip b">−'+v.ind+'</span></div>'}).join(''):'<p class="sub">Chưa có vi phạm nào trong tuần.</p>')+'</div><a href="#vi-pham" style="color:var(--brand);font-weight:600">Ghi nhận vi phạm →</a></section>'+
+  '<section class="card"><h2>Phiếu phép đang hiệu lực</h2><div class="list">'+(S.leaves.filter(l=>l.to>=t).map(l=>{const s=stu(l.sid);return '<div class="li"><div class="n"><b>'+esc(s.name)+'</b><small>'+ddmm(l.from)+' → '+ddmm(l.to)+' · '+esc(l.reason)+'</small></div><span class="chip '+(l.status==='ok'?'ok">Đã duyệt':'w">Chờ HT duyệt')+'</span></div>'}).join('')||'<p class="sub">Không có phiếu phép nào.</p>')+'</div></section></div>'+
+  '<p class="demo">Dữ liệu mẫu cho buổi trình bày · <button class="linkbtn" style="color:var(--brand);padding:0" data-act="reset">Đặt lại dữ liệu mẫu</button></p>';
+}
+
+function vScan(){
+  const t=today(),r=peek(t,sess),st=stats(t,sess),n=S.students.length,done=st.p;
+  let res='';
+  if(last){
+    if(last.ok){const s=stu(last.id);res='<div class="res ok"><div class="ph">'+ini(s.name)+'</div><div style="flex:1"><b style="font-size:16px">'+esc(s.name)+'</b><div style="font-size:13px">'+s.id+' · Phòng '+s.room+' · '+last.time+'</div><div style="font-size:12px;font-weight:700">Đối chiếu ảnh thẻ với học sinh</div></div><b>✓ Có mặt</b></div>';}
+    else res='<div class="res '+(last.warn?'w':'b')+'"><div style="flex:1"><b>'+esc(last.title)+'</b><div style="font-size:13px">'+esc(last.msg)+'</div></div></div>';
+  }
+  const absent=S.students.filter(s=>!r.present[s.id]);
+  const absHtml=absent.map(s=>{const lv=leaveOf(s.id,t);
+    if(lv)return '<div class="li"><div class="av">'+ini(s.name)+'</div><div class="n"><b>'+esc(s.name)+'</b><small>Phiếu phép #'+lv.id+' · '+esc(lv.reason)+'</small></div><span class="chip w">Có phép</span></div>';
+    const a=r.absent[s.id];
+    return '<div class="li"><div class="av">'+ini(s.name)+'</div><div class="n"><b>'+esc(s.name)+'</b><small>'+s.id+' · Phòng '+s.room+'</small></div><div class="pick" role="radiogroup" aria-label="Lý do vắng của '+esc(s.name)+'">'+
+      '<button role="radio" aria-checked="'+(a==='p')+'" class="'+(a==='p'?'onw':'')+'" data-act="abs" data-id="'+s.id+'" data-v="p">Có phép</button>'+
+      '<button role="radio" aria-checked="'+(a==='k')+'" class="'+(a==='k'?'onb':'')+'" data-act="abs" data-id="'+s.id+'" data-v="k">Không lý do</button></div></div>';}).join('');
+  const pres=S.students.filter(s=>r.present[s.id]).sort((a,b)=>r.present[b.id].localeCompare(r.present[a.id]));
+  const presHtml=pres.map(s=>'<div class="li"><div class="av">'+ini(s.name)+'</div><div class="n"><b>'+esc(s.name)+'</b><small>'+s.id+'</small></div><span class="sub">'+r.present[s.id]+'</span>'+(r.sent?'':'<button class="x" data-act="unscan" data-id="'+s.id+'" aria-label="Huỷ điểm danh '+esc(s.name)+'">✕</button>')+'</div>').join('');
+  return '<div><div class="sub">'+vnDate(new Date())+'</div><h1>Điểm danh lớp 10B</h1></div>'+
+  '<div class="seg" role="group" aria-label="Chọn buổi">'+SESS.map(s=>'<button data-act="sess" data-k="'+s[0]+'" class="'+(s[0]===sess?'on':'')+'">Buổi '+s[1].toLowerCase()+'</button>').join('')+'</div>'+
+  '<div class="grid">'+
+  '<section class="card"><div class="row" style="justify-content:space-between"><h2 style="flex:none">Quét thẻ học sinh</h2><b style="flex:none">'+done+' / '+n+'</b></div><div class="bar"><i style="width:'+Math.round(done/n*100)+'%"></i></div>'+
+  (r.sent?'<div class="res ok"><div style="flex:1"><b>Đã gửi báo cáo buổi '+sessName(sess).toLowerCase()+'</b><div style="font-size:13px">Muốn sửa, hãy mở lại điểm danh.</div></div><button class="btn ghost" data-act="reopen" style="flex:none">Mở lại</button></div>':
+  '<label class="btn big" for="cam" style="cursor:pointer">'+ic('cam',24)+'Chụp mã QR trên thẻ</label><input id="cam" type="file" accept="image/*" capture="environment" hidden>'+
+  '<form id="manual" class="row"><label class="f" style="flex:1 1 160px">Hoặc nhập mã học sinh<input type="text" id="mcode" placeholder="VD: 10B-017 hoặc 17" inputmode="text"></label><button class="btn ghost" type="submit" style="flex:0 0 auto;align-self:flex-end">Xác nhận</button></form>'+
+  '<button class="btn ghost" data-act="demo">Mô phỏng một lượt quét (trình bày)</button>')+
+  res+'</section>'+
+  '<section class="card"><h2 style="color:var(--b)">Chưa quét ('+absent.length+')</h2><div class="list">'+(absHtml||'<p class="sub">Cả lớp đã có mặt.</p>')+'</div>'+
+  (r.sent?'':'<button class="btn big" data-act="send">Gửi báo cáo quân số</button>')+'</section>'+
+  (report?'<section class="card" style="grid-column:1/-1"><div class="row" style="justify-content:space-between"><h2 style="flex:none">Báo cáo đã gửi</h2><button class="btn ghost" style="flex:none" data-act="copy">Sao chép để gửi Zalo</button></div><pre class="rep" id="rep">'+esc(report)+'</pre></section>':'')+
+  '<section class="card"><h2 style="color:var(--ok)">Đã có mặt ('+pres.length+')</h2><div class="list">'+(presHtml||'<p class="sub">Chưa quét học sinh nào.</p>')+'</div></section></div>';
+}
+
+function vLeave(){
+  const t=today();
+  const list=S.leaves.slice().reverse().map(l=>{const s=stu(l.sid);return '<div class="li"><div class="av">'+ini(s.name)+'</div><div class="n"><b>#'+l.id+' · '+esc(s.name)+'</b><small>'+ddmm(l.from)+' → '+ddmm(l.to)+' · '+esc(l.reason)+'</small></div><span class="chip '+(l.status==='ok'?'ok">Đã duyệt':'w">Chờ HT duyệt')+'</span></div>'}).join('');
+  return '<div><div class="sub">Học sinh không dùng điện thoại, GVCN lập phiếu thay</div><h1>Phiếu phép</h1></div><div class="grid">'+
+  '<form class="card" id="leaveForm"><h2>Tạo phiếu phép</h2>'+
+  '<label class="f">Học sinh<select id="lsid">'+S.students.map(s=>'<option value="'+s.id+'">'+esc(s.name)+' ('+s.id+')</option>').join('')+'</select></label>'+
+  '<div class="row"><label class="f" style="flex:1 1 140px">Từ ngày<input type="date" id="lfrom" value="'+t+'"></label><label class="f" style="flex:1 1 140px">Đến ngày<input type="date" id="lto" value="'+t+'"></label></div>'+
+  '<label class="f">Lý do<input type="text" id="lreason" placeholder="VD: Phụ huynh đón đi khám bệnh" required></label>'+
+  '<button class="btn big" type="submit">Lưu phiếu phép</button><p class="sub" style="margin:0">Phép quá 3 ngày cần Hiệu trưởng duyệt.</p></form>'+
+  '<section class="card"><h2>Danh sách phiếu phép</h2><div class="list">'+(list||'<p class="sub">Chưa có phiếu phép.</p>')+'</div></section></div>';
+}
+
+function vVio(){
+  const from=new Date();from.setDate(from.getDate()-6);const fk=dkey(from);
+  const wk=S.vios.filter(v=>v.date>=fk);
+  const rooms={};S.students.forEach(s=>rooms[s.room]=0);wk.forEach(v=>{rooms[stu(v.sid).room]+=v.room;});
+  const list=wk.slice().reverse().map(v=>{const s=stu(v.sid);return '<div class="li">'+(v.photo?'<img class="thumb" style="width:56px;height:56px" src="'+v.photo+'" alt="Ảnh bằng chứng">':'<div class="av">'+ini(s.name)+'</div>')+'<div class="n"><b>'+esc(s.name)+' · P.'+s.room+'</b><small>'+esc(VT[v.type][0])+(v.note?' · '+esc(v.note):'')+' · '+ddmm(v.date)+' '+v.time+'</small></div><span class="chip b">−'+v.ind+' / −'+v.room+'</span></div>'}).join('');
+  return '<div><div class="sub">Quét thẻ hoặc chọn học sinh, chụp ảnh làm bằng chứng</div><h1>Ghi nhận vi phạm</h1></div><div class="grid">'+
+  '<form class="card" id="vioForm"><label class="f">Học sinh<select id="vsid">'+S.students.map(s=>'<option value="'+s.id+'">'+esc(s.name)+' · Phòng '+s.room+'</option>').join('')+'</select></label>'+
+  '<fieldset style="border:0;margin:0;padding:0"><legend style="font-weight:700;margin-bottom:8px">Loại lỗi</legend><div class="types">'+VT.map((t,i)=>'<button type="button" data-act="vtype" data-i="'+i+'" aria-pressed="'+(i===vType)+'" class="'+(i===vType?'on':'')+'"><span>'+t[0]+'<small>−'+t[1]+' cá nhân · −'+t[2]+' phòng</small></span></button>').join('')+'</div></fieldset>'+
+  '<div class="f" style="font-weight:600;color:var(--mute);font-size:14px">Ảnh bằng chứng<div class="row" style="align-items:center">'+(vPhoto?'<img class="thumb" src="'+vPhoto+'" alt="Ảnh đã chụp" style="flex:none">':'')+'<label class="btn ghost" for="vph" style="cursor:pointer;flex:0 0 auto">'+ic('cam')+(vPhoto?'Chụp lại':'Chụp ảnh')+'</label><input id="vph" type="file" accept="image/*" capture="environment" hidden></div></div>'+
+  '<label class="f">Ghi chú<input type="text" id="vnote" placeholder="VD: Báo động sáng"></label>'+
+  '<button class="btn big" type="submit">Gửi biên bản vi phạm</button></form>'+
+  '<div style="display:flex;flex-direction:column;gap:16px"><section class="card"><h2>Điểm trừ thi đua phòng (7 ngày)</h2><div class="list">'+Object.keys(rooms).sort((a,b)=>rooms[b]-rooms[a]).map(k=>'<div class="li"><div class="n"><b>Phòng '+k+'</b></div><span class="chip '+(rooms[k]?'b">−'+rooms[k]:'ok">0')+'</span></div>').join('')+'</div></section>'+
+  '<section class="card"><h2>Vi phạm 7 ngày qua</h2><div class="list">'+(list||'<p class="sub">Chưa có vi phạm.</p>')+'</div></section></div></div>';
+}
+
+function cardGrid(){
+  const q=cardQ.trim().toLowerCase();
+  const ss=S.students.filter(s=>!q||s.name.toLowerCase().includes(q)||s.id.toLowerCase().includes(q));
+  return ss.map(s=>'<article class="idc"><header>TRƯỜNG NỘI TRÚ<span>THẺ HỌC SINH</span></header><div class="bd"><div class="in"><b>'+esc(s.name.toUpperCase())+'</b><span>Lớp 10B · Phòng '+s.room+'</span><span>Mã HS: '+s.id+'</span><span>Năm học 2026–2027</span></div><div class="qr" role="img" aria-label="Mã QR của '+esc(s.name)+'">'+qrSvg(payload(s))+'</div></div><footer><span>Phiên bản thẻ v'+s.cardV+'</span><button data-act="reissue" data-id="'+s.id+'">Báo mất &amp; cấp lại</button></footer></article>').join('')||'<p class="sub">Không tìm thấy học sinh.</p>';
+}
+function vCards(){
+  return '<div><div class="sub">Mỗi học sinh một thẻ cứng, mã QR chứa mã học sinh và phiên bản thẻ</div><h1>Thẻ QR lớp 10B</h1></div>'+
+  '<div class="card"><label class="f">Tìm học sinh<input type="text" id="cq" value="'+esc(cardQ)+'" placeholder="Tên hoặc mã học sinh"></label>'+
+  '<p class="sub" style="margin:0">Khi báo mất thẻ, mã cũ bị khoá ngay: quét thẻ cũ sẽ báo lỗi. Bản đưa lên hosting thật có thêm nút in cả lớp ra giấy A4.</p></div>'+
+  '<div class="cards" id="cardgrid">'+cardGrid()+'</div>';
+}
+
+function render(){
+  const app=document.getElementById('app');
+  if(!S.login){app.innerHTML=vLogin();return;}
+  let v=location.hash.slice(1);if(!NAV.some(n=>n[0]===v))v='tong-quan';
+  const body={'tong-quan':vHome,'diem-danh':vScan,'phieu-phep':vLeave,'vi-pham':vVio,'the-qr':vCards}[v]();
+  app.innerHTML='<div class="shell"><nav class="side" aria-label="Điều hướng"><div class="logo"><i>'+ic('card',22).replace('currentColor','#0F2744')+'</i><div><b>Điểm danh QR</b><small>Cổng giáo viên</small></div></div>'+
+  '<div class="nav">'+NAV.map(n=>'<a href="#'+n[0]+'" class="'+(n[0]===v?'on':'')+'"'+(n[0]===v?' aria-current="page"':'')+'>'+ic(n[2],18)+n[1]+'</a>').join('')+'</div>'+
+  '<div class="me"><div class="av">TT</div><div style="flex:1">Lê Thu Trang<small>GVCN 10B · chỉ xem lớp mình</small></div></div><button class="linkbtn" data-act="logout">Đăng xuất</button></nav>'+
+  '<main><div class="top"><div><b>Lớp 10B</b><small>GVCN Lê Thu Trang</small></div><button data-act="logout">Đăng xuất</button></div>'+body+'</main>'+
+  '<nav class="tabbar" aria-label="Điều hướng">'+NAV.map(n=>'<a href="#'+n[0]+'" class="'+(n[0]===v?'on':'')+'"'+(n[0]===v?' aria-current="page"':'')+'>'+ic(n[2],22)+n[1]+'</a>').join('')+'</nav></div>';
+}
+
+/* ---------- scanning ---------- */
+function handleCode(text,manual){
+  const t=today(),r=rec(t,sess);
+  if(r.sent){last={ok:false,title:'Buổi này đã gửi báo cáo',msg:'Bấm “Mở lại” nếu cần sửa.',warn:true};return render();}
+  let s=null;
+  if(manual){let c=text.trim().toUpperCase();if(/^\d+$/.test(c))c='10B-'+c.padStart(3,'0');s=stu(c);
+    if(!s){last={ok:false,title:'Không tìm thấy mã '+text,msg:'Kiểm tra lại mã học sinh lớp 10B.'};return render();}}
+  else{const m=/^QRDD\|([^|]+)\|v(\d+)$/.exec(text.trim());
+    if(!m){last={ok:false,title:'Mã QR không hợp lệ',msg:'Đây không phải thẻ học sinh của trường.'};return render();}
+    s=stu(m[1]);
+    if(!s){last={ok:false,title:'Học sinh không thuộc lớp 10B',msg:'Mã '+m[1]+' thuộc lớp khác.'};return render();}
+    if(+m[2]!==s.cardV){last={ok:false,title:'Thẻ cũ đã bị khoá',msg:s.name+' đã được cấp thẻ mới (v'+s.cardV+'). Thu lại thẻ này.'};return render();}}
+  if(r.present[s.id]){last={ok:false,title:s.name+' đã điểm danh',msg:'Đã quét lúc '+r.present[s.id]+'.',warn:true};return render();}
+  r.present[s.id]=hm();delete r.absent[s.id];last={ok:true,id:s.id,time:r.present[s.id]};save();render();
+}
+function loadImg(file){return new Promise((ok,no)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=u;});}
+async function decode(file){
+  const im=await loadImg(file);
+  if('BarcodeDetector' in window){try{const d=new BarcodeDetector({formats:['qr_code']});const r=await d.detect(im);if(r[0])return r[0].rawValue;}catch(e){}}
+  if(!window.jsQR)return null;
+  for(const max of [1200,700,1800]){
+    const sc=Math.min(1,max/Math.max(im.width,im.height)),w=Math.round(im.width*sc),h=Math.round(im.height*sc);
+    const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(im,0,0,w,h);
+    const res=jsQR(x.getImageData(0,0,w,h).data,w,h,{inversionAttempts:'attemptBoth'});if(res)return res.data;
+  }
+  return null;
+}
+async function shrink(file){const im=await loadImg(file);const sc=Math.min(1,480/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',0.7);}
+
+function buildReport(){
+  const t=today(),r=peek(t,sess),st=stats(t,sess);
+  const ex=S.students.filter(s=>!r.present[s.id]&&(leaveOf(s.id,t)||r.absent[s.id]==='p'));
+  const un=S.students.filter(s=>!r.present[s.id]&&!leaveOf(s.id,t)&&r.absent[s.id]==='k');
+  let out='BÁO CÁO QUÂN SỐ – LỚP 10B\nBuổi '+sessName(sess).toLowerCase()+' '+ddmm(t)+'/'+t.slice(0,4)+' (gửi lúc '+hm()+')\nSĩ số: '+S.students.length+' | Có mặt: '+st.p+' | Có phép: '+st.ex+' | Không lý do: '+st.un;
+  if(ex.length)out+='\n\nVắng có phép:\n'+ex.map(s=>{const l=leaveOf(s.id,t);return '- '+s.name+(l?' (phiếu #'+l.id+': '+l.reason+')':'')}).join('\n');
+  if(un.length)out+='\n\nVắng không lý do:\n'+un.map(s=>'- '+s.name+' – Phòng '+s.room).join('\n');
+  return out+'\n\nGVCN: Lê Thu Trang';
+}
+
+/* ---------- events ---------- */
+window.addEventListener('hashchange',()=>{last=null;report=null;render();window.scrollTo(0,0);});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='sess'){sess=b.dataset.k;last=null;report=null;render();}
+  else if(a==='abs'){const r=rec(today(),sess);r.absent[b.dataset.id]=r.absent[b.dataset.id]===b.dataset.v?undefined:b.dataset.v;if(!r.absent[b.dataset.id])delete r.absent[b.dataset.id];save();render();}
+  else if(a==='unscan'){const r=rec(today(),sess);delete r.present[b.dataset.id];last=null;save();render();toast('Đã huỷ lượt quét');}
+  else if(a==='demo'){const r=peek(today(),sess);const left=S.students.filter(s=>!r.present[s.id]&&!leaveOf(s.id,today()));
+    if(!left.length)return toast('Tất cả học sinh đã được điểm danh');handleCode(payload(left[Math.floor(Math.random()*left.length)]));}
+  else if(a==='send'){const t=today(),st=stats(t,sess);if(st.pend)return toast('Còn '+st.pend+' học sinh chưa xác nhận lý do vắng');
+    rec(t,sess).sent=true;report=buildReport();save();render();toast('Đã gửi báo cáo lên Ban Giám hiệu');}
+  else if(a==='reopen'){rec(today(),sess).sent=false;report=null;save();render();}
+  else if(a==='copy'){const txt=report||'';const fb=()=>{const el=document.getElementById('rep');const rg=document.createRange();rg.selectNodeContents(el);const sl=getSelection();sl.removeAllRanges();sl.addRange(rg);toast('Đã chọn nội dung, bấm sao chép trên máy');};
+    try{navigator.clipboard.writeText(txt).then(()=>toast('Đã sao chép báo cáo'),fb);}catch(err){fb();}}
+  else if(a==='vtype'){vType=+b.dataset.i;render();}
+  else if(a==='reissue'){const s=stu(b.dataset.id);s.cardV++;save();document.getElementById('cardgrid').innerHTML=cardGrid();toast('Đã khoá thẻ cũ, cấp thẻ mới v'+s.cardV+' cho '+s.name);}
+  else if(a==='logout'){S.login=false;save();render();}
+  else if(a==='reset'){S=seed();S.login=true;save();last=null;report=null;render();toast('Đã đặt lại dữ liệu mẫu');}
+});
+document.addEventListener('submit',e=>{
+  e.preventDefault();const f=e.target.id;
+  if(f==='loginForm'){S.login=true;save();location.hash='tong-quan';render();}
+  else if(f==='manual'){const v=document.getElementById('mcode').value;if(v.trim())handleCode(v,true);}
+  else if(f==='leaveForm'){const from=document.getElementById('lfrom').value,to=document.getElementById('lto').value,reason=document.getElementById('lreason').value.trim();
+    if(!from||!to||to<from)return toast('Ngày kết thúc phải sau ngày bắt đầu');if(!reason)return toast('Hãy nhập lý do');
+    const days=(new Date(to)-new Date(from))/864e5+1;
+    S.leaves.push({id:S.nextLeave++,sid:document.getElementById('lsid').value,from,to,reason,status:days>3?'wait':'ok'});save();render();toast(days>3?'Đã gửi phiếu, chờ Hiệu trưởng duyệt':'Đã lưu phiếu phép');}
+  else if(f==='vioForm'){const t=VT[vType];S.vios.push({id:S.nextVio++,sid:document.getElementById('vsid').value,type:vType,ind:t[1],room:t[2],date:today(),time:hm(),note:document.getElementById('vnote').value.trim(),photo:vPhoto});
+    vPhoto='';save();render();toast('Đã gửi biên bản vi phạm');}
+});
+document.addEventListener('change',async e=>{
+  if(e.target.id==='cam'&&e.target.files[0]){toast('Đang đọc mã QR…');try{const code=await decode(e.target.files[0]);
+      if(code)handleCode(code);else{last={ok:false,title:'Không đọc được mã QR',msg:'Chụp gần hơn, đủ sáng, mã nằm giữa khung hình.'};render();}}catch(err){toast('Không mở được ảnh');}}
+  if(e.target.id==='vph'&&e.target.files[0]){try{vPhoto=await shrink(e.target.files[0]);render();}catch(err){toast('Không mở được ảnh');}}
+});
+document.addEventListener('input',e=>{if(e.target.id==='cq'){cardQ=e.target.value;document.getElementById('cardgrid').innerHTML=cardGrid();}});
+render();
+}
+</script>
+</body>
+</html>

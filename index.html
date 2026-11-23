@@ -65,7 +65,8 @@ input[type=text],input[type=email],input[type=password],input[type=date],select,
 textarea{min-height:90px;resize:vertical}
 .bar{height:10px;border-radius:999px;background:var(--soft);overflow:hidden}.bar i{display:block;height:100%;background:#2E9E5B;border-radius:999px;transition:width .3s}
 .res{display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px}
-.res.ok{background:var(--okb);color:var(--ok)}.res.b{background:var(--bb);color:var(--b)}.res.w{background:var(--wb);color:var(--w)}
+.res.ok{background:var(--okb);color:var(--ok)}.res.b{background:var(--bb);color:var(--b)}.res.w{background:var(--wb);color:var(--w)}.res.n{background:var(--soft);color:var(--ink);border:2px solid var(--brand)}
+.dir{font-size:18px;font-weight:800;white-space:nowrap}
 .ph{width:56px;height:68px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:18px;flex:none;background:var(--card);color:var(--brand);border:2px dashed currentColor}
 .list{display:flex;flex-direction:column}
 .li{display:flex;gap:12px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line)}
@@ -112,8 +113,8 @@ pre.rep{white-space:pre-wrap;background:var(--soft);border-radius:12px;padding:1
  .top{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#0F2744;color:#fff;margin:-28px calc(-1*clamp(16px,3vw,36px)) 0;padding:14px 16px}
  .top b{font-size:15px}.top small{display:block;color:#A9B8CF;font-size:12px}
  .top button{min-height:44px;border-radius:10px;border:1px solid #2D4A70;background:#1A3456;color:#fff;padding:6px 12px;font-size:13px;cursor:pointer}
- .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);z-index:10;padding-bottom:env(safe-area-inset-bottom)}
- .tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;min-height:60px;font-size:11px;color:var(--mute);text-decoration:none;font-weight:600}
+ .tabbar{display:grid;grid-template-columns:repeat(6,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+ .tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 1px;min-height:60px;font-size:10.5px;text-align:center;line-height:1.2;color:var(--mute);text-decoration:none;font-weight:600}
  .tabbar a.on{color:var(--brand)}
  .toast{bottom:84px}
 }
@@ -142,6 +143,11 @@ const ini=n=>{const p=n.split(' ');return (p[p.length-2][0]+p[p.length-1][0]).to
 const vnDate=d=>DOW[d.getDay()]+', '+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
 const curSess=()=>{const h=new Date().getHours();return h<12?'sang':h<18?'chieu':'toi'};
 const sessName=k=>SESS.find(s=>s[0]===k)[1];
+const MEALS=[['sang','Bữa sáng'],['trua','Bữa trưa'],['toi','Bữa tối']];
+const MAXMIN=30; /* ở phòng ăn quá số phút này sẽ được đánh dấu */
+const curMeal=()=>{const h=new Date().getHours();return h<10?'sang':h<15?'trua':'toi'};
+const mealName=k=>MEALS.find(m=>m[0]===k)[1];
+const minsOf=ms=>Math.max(0,Math.floor(ms/6e4));
 
 function seed(){
   const students=NAMES.map((n,i)=>({id:'10B-'+String(i+1).padStart(3,'0'),name:n,room:String(301+Math.floor(i/8)),cardV:1}));
@@ -157,12 +163,13 @@ function seed(){
   return {v:1,login:false,students,att,
     leaves:[{id:124,sid:'10B-004',from:t,to:t,reason:'Phụ huynh đón đi khám răng',status:'ok'}],
     vios:[{id:1,sid:'10B-022',type:0,ind:5,room:2,date:dkey(y),time:'05:40',note:'Báo động sáng',photo:''}],
-    nextLeave:125,nextVio:2};
+    meals:{},nextLeave:125,nextVio:2};
 }
 let S=null;try{S=JSON.parse(localStorage.getItem(LS))}catch(e){}
 if(!S||S.v!==1)S=seed();
+if(!S.meals)S.meals={};
 const save=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
-let sess=curSess(),last=null,report=null,vType=0,vPhoto='',cardQ='';
+let sess=curSess(),last=null,report=null,vType=0,vPhoto='',cardQ='',meal=curMeal(),mlast=null;
 
 const stu=id=>S.students.find(s=>s.id===id);
 const rec=(date,k)=>S.att[date+'_'+k]||(S.att[date+'_'+k]={present:{},absent:{},sent:false});
@@ -172,17 +179,26 @@ function stats(date,k){const r=peek(date,k);let p=0,ex=0,un=0,pend=0;
   S.students.forEach(s=>{if(r.present[s.id])p++;else if(leaveOf(s.id,date)||r.absent[s.id]==='p')ex++;else if(r.absent[s.id]==='k')un++;else pend++;});
   return {p,ex,un,pend};}
 const payload=s=>'QRDD|'+s.id+'|v'+s.cardV;
+/* giờ ăn: log[sid]={in,it,out,ot} (giờ hiển thị + mốc ms), skip[sid]=true khi báo cắt cơm */
+const mrec=(d,k)=>S.meals[d+'_'+k]||(S.meals[d+'_'+k]={log:{},skip:{},closed:false});
+const mpeek=(d,k)=>S.meals[d+'_'+k]||{log:{},skip:{},closed:false};
+function mstats(d,k){const r=mpeek(d,k),now=Date.now();let inside=0,done=0,skip=0,pend=0,over=0;
+  S.students.forEach(s=>{const g=r.log[s.id];
+    if(g){if(g.out){done++;if(minsOf(g.ot-g.it)>=MAXMIN)over++;}else{inside++;if(minsOf(now-g.it)>=MAXMIN)over++;}}
+    else if(leaveOf(s.id,d)||r.skip[s.id])skip++;else pend++;});
+  return {inside,done,skip,pend,over};}
 
 const I={
  home:'<path d="M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z"/>',
  scan:'<path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4M7 12h10"/>',
  leave:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/>',
  vio:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+ meal:'<path d="M7 2v20M4 2v6a3 3 0 0 0 6 0V2M17 22V2c-2.5 1.5-3.5 4.5-3.5 8 0 2 1.5 3 3.5 3"/>',
  card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h4v4H6zM14 10h4M14 14h3"/>',
  cam:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'
 };
 const ic=(k,s=20)=>'<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[k]+'</svg>';
-const NAV=[['tong-quan','Tổng quan','home'],['diem-danh','Điểm danh','scan'],['phieu-phep','Phiếu phép','leave'],['vi-pham','Vi phạm','vio'],['the-qr','Thẻ QR','card']];
+const NAV=[['tong-quan','Tổng quan','home'],['diem-danh','Điểm danh','scan'],['gio-an','Giờ ăn','meal'],['phieu-phep','Phiếu phép','leave'],['vi-pham','Vi phạm','vio'],['the-qr','Thẻ QR','card']];
 
 function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2600);}
 
@@ -222,7 +238,8 @@ function vHome(){
   '<div class="grid"><section class="card" style="grid-column:1/-1"><div class="row" style="justify-content:space-between"><h2 style="flex:none">Bảng điểm danh 7 ngày (buổi sáng)</h2><span class="sub" style="flex:none">✓ có mặt · P có phép · K không lý do</span></div>'+
   '<div class="scroll"><table><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div></section>'+
   '<section class="card"><h2>Vi phạm trong tuần</h2><div class="list">'+(wk.length?wk.map(v=>{const s=stu(v.sid);return '<div class="li"><div class="av">'+ini(s.name)+'</div><div class="n"><b>'+esc(s.name)+'</b><small>'+esc(VT[v.type][0])+' · '+ddmm(v.date)+' '+v.time+'</small></div><span class="chip b">−'+v.ind+'</span></div>'}).join(''):'<p class="sub">Chưa có vi phạm nào trong tuần.</p>')+'</div><a href="#vi-pham" style="color:var(--brand);font-weight:600">Ghi nhận vi phạm →</a></section>'+
-  '<section class="card"><h2>Phiếu phép đang hiệu lực</h2><div class="list">'+(S.leaves.filter(l=>l.to>=t).map(l=>{const s=stu(l.sid);return '<div class="li"><div class="n"><b>'+esc(s.name)+'</b><small>'+ddmm(l.from)+' → '+ddmm(l.to)+' · '+esc(l.reason)+'</small></div><span class="chip '+(l.status==='ok'?'ok">Đã duyệt':'w">Chờ HT duyệt')+'</span></div>'}).join('')||'<p class="sub">Không có phiếu phép nào.</p>')+'</div></section></div>'+
+  '<section class="card"><h2>Phiếu phép đang hiệu lực</h2><div class="list">'+(S.leaves.filter(l=>l.to>=t).map(l=>{const s=stu(l.sid);return '<div class="li"><div class="n"><b>'+esc(s.name)+'</b><small>'+ddmm(l.from)+' → '+ddmm(l.to)+' · '+esc(l.reason)+'</small></div><span class="chip '+(l.status==='ok'?'ok">Đã duyệt':'w">Chờ HT duyệt')+'</span></div>'}).join('')||'<p class="sub">Không có phiếu phép nào.</p>')+'</div></section>'+
+  mealCard(t)+'</div>'+
   '<p class="demo">Dữ liệu mẫu cho buổi trình bày · <button class="linkbtn" style="color:var(--brand);padding:0" data-act="reset">Đặt lại dữ liệu mẫu</button></p>';
 }
 
@@ -255,6 +272,66 @@ function vScan(){
   (r.sent?'':'<button class="btn big" data-act="send">Gửi báo cáo quân số</button>')+'</section>'+
   (report?'<section class="card" style="grid-column:1/-1"><div class="row" style="justify-content:space-between"><h2 style="flex:none">Báo cáo đã gửi</h2><button class="btn ghost" style="flex:none" data-act="copy">Sao chép để gửi Zalo</button></div><pre class="rep" id="rep">'+esc(report)+'</pre></section>':'')+
   '<section class="card"><h2 style="color:var(--ok)">Đã có mặt ('+pres.length+')</h2><div class="list">'+(presHtml||'<p class="sub">Chưa quét học sinh nào.</p>')+'</div></section></div>';
+}
+
+function mealCard(t){
+  const ms=mstats(t,meal),r=mpeek(t,meal);
+  const row=(label,n,cls)=>'<div class="li"><div class="n"><b>'+label+'</b></div><span class="chip '+cls+'">'+n+'</span></div>';
+  return '<section class="card"><div class="row" style="justify-content:space-between"><h2 style="flex:none">Giờ ăn · '+mealName(meal)+'</h2>'+(r.closed?'<span class="chip ok" style="flex:none">Đã chốt</span>':'')+'</div><div class="list">'+
+   row('Đang trong phòng ăn',ms.inside,'m')+row('Đã ăn xong',ms.done,'ok')+row('Cắt cơm / có phép',ms.skip,'w')+row('Chưa đến',ms.pend,ms.pend&&r.closed?'b':'m')+
+   (ms.over?row('Ở quá '+MAXMIN+' phút',ms.over,'w'):'')+
+  '</div><a href="#gio-an" style="color:var(--brand);font-weight:600">Mở quét ra vào phòng ăn →</a></section>';
+}
+
+function vMeal(){
+  const t=today(),r=mpeek(t,meal),st=mstats(t,meal),n=S.students.length,now=Date.now(),mn=mealName(meal).toLowerCase();
+  const portions=n-st.skip,entered=st.inside+st.done;
+  let res='';
+  if(mlast){
+    if(mlast.ok){const s=stu(mlast.id),inn=mlast.dir==='in';
+      res='<div class="res '+(inn?'ok':'n')+'"><div class="ph">'+ini(s.name)+'</div><div style="flex:1"><b style="font-size:16px">'+esc(s.name)+'</b><div style="font-size:13px">'+s.id+' · Phòng '+s.room+' · '+mlast.time+'</div><div style="font-size:12px;font-weight:700">'+(inn?'Đối chiếu ảnh thẻ với học sinh':'Thời gian ăn: '+mlast.dur+' phút')+'</div></div><span class="dir">'+(inn?'→ VÀO':'← RA')+'</span></div>';}
+    else res='<div class="res '+(mlast.warn?'w':'b')+'"><div style="flex:1"><b>'+esc(mlast.title)+'</b><div style="font-size:13px">'+esc(mlast.msg)+'</div></div></div>';
+  }
+  const inside=S.students.filter(s=>r.log[s.id]&&!r.log[s.id].out).sort((a,b)=>r.log[a.id].it-r.log[b.id].it);
+  const done=S.students.filter(s=>r.log[s.id]&&r.log[s.id].out).sort((a,b)=>r.log[b.id].ot-r.log[a.id].ot);
+  const rank=s=>leaveOf(s.id,t)?2:r.skip[s.id]?1:0;
+  const notIn=S.students.filter(s=>!r.log[s.id]).sort((a,b)=>rank(a)-rank(b));
+
+  const insHtml=inside.map(s=>{const g=r.log[s.id],m=minsOf(now-g.it);
+    return '<div class="li"><div class="av">'+ini(s.name)+'</div><div class="n"><b>'+esc(s.name)+'</b><small>Vào '+g.in+' · <span data-since="'+g.it+'">'+m+' phút</span></small></div>'+
+    '<span class="chip w" data-over="'+g.it+'"'+(m>=MAXMIN?'':' hidden')+'>Quá '+MAXMIN+' phút</span>'+
+    (r.closed?'':'<div class="pick"><button data-act="mout" data-id="'+s.id+'" aria-label="Cho '+esc(s.name)+' ra (không quét thẻ)">Cho ra</button></div><button class="x" data-act="mundo" data-id="'+s.id+'" aria-label="Huỷ lượt vào của '+esc(s.name)+'">✕</button>')+'</div>';}).join('');
+
+  const doneHtml=done.map(s=>{const g=r.log[s.id],m=minsOf(g.ot-g.it);
+    return '<div class="li"><div class="av">'+ini(s.name)+'</div><div class="n"><b>'+esc(s.name)+'</b><small>Vào '+g.in+' · Ra '+g.out+'</small></div><span class="chip '+(m>=MAXMIN?'w':'ok')+'">'+m+' phút</span></div>';}).join('');
+
+  const notHtml=notIn.map(s=>{const lv=leaveOf(s.id,t);
+    if(lv)return '<div class="li"><div class="av">'+ini(s.name)+'</div><div class="n"><b>'+esc(s.name)+'</b><small>Phiếu phép #'+lv.id+' · tự động cắt cơm</small></div><span class="chip w">Có phép</span></div>';
+    const k=!!r.skip[s.id];
+    return '<div class="li"><div class="av">'+ini(s.name)+'</div><div class="n"><b>'+esc(s.name)+'</b><small>'+s.id+' · Phòng '+s.room+'</small></div>'+
+    (r.closed?'<span class="chip '+(k?'w">Cắt cơm':'b">Không đến')+'</span>':
+     '<div class="pick"><button aria-pressed="'+k+'" class="'+(k?'onw':'')+'" data-act="mskip" data-id="'+s.id+'">Báo cắt cơm</button></div>')+'</div>';}).join('');
+
+  return '<div><div class="sub">'+vnDate(new Date())+' · Quét thẻ khi học sinh vào và khi ra khỏi phòng ăn</div><h1>Giờ ăn lớp 10B</h1></div>'+
+  '<div class="seg" role="group" aria-label="Chọn bữa ăn">'+MEALS.map(m=>'<button data-act="meal" data-k="'+m[0]+'" class="'+(m[0]===meal?'on':'')+'">'+m[1]+'</button>').join('')+'</div>'+
+  '<div class="stats">'+
+   '<div class="st"><span>Đang trong phòng ăn</span><b>'+st.inside+'</b></div>'+
+   '<div class="st ok"><span>Đã ăn xong</span><b>'+st.done+'</b></div>'+
+   '<div class="st w"><span>Cắt cơm / có phép</span><b>'+st.skip+'</b></div>'+
+   '<div class="st '+(r.closed&&st.pend?'b':'p')+'"><span>'+(r.closed?'Không đến ăn':'Chưa đến')+'</span><b>'+st.pend+'</b></div></div>'+
+  '<div class="grid">'+
+  '<section class="card"><div class="row" style="justify-content:space-between"><h2 style="flex:none">Quét thẻ ra vào phòng ăn</h2><b style="flex:none">'+entered+' / '+portions+' suất</b></div><div class="bar"><i style="width:'+(portions?Math.min(100,Math.round(entered/portions*100)):0)+'%"></i></div>'+
+  (r.closed?'<div class="res ok"><div style="flex:1"><b>Đã chốt '+mn+'</b><div style="font-size:13px">Muốn sửa, hãy mở lại.</div></div><button class="btn ghost" data-act="mreopen" style="flex:none">Mở lại</button></div>':
+  '<p class="sub" style="margin:0">Quét lần 1 là <b>vào</b>, quét lần 2 là <b>ra</b>. Hệ thống tự nhận biết.</p>'+
+  '<label class="btn big" for="mcam" style="cursor:pointer">'+ic('cam',24)+'Chụp mã QR trên thẻ</label><input id="mcam" type="file" accept="image/*" capture="environment" hidden>'+
+  '<form id="mealManual" class="row"><label class="f" style="flex:1 1 160px">Hoặc nhập mã học sinh<input type="text" id="mmcode" placeholder="VD: 10B-017 hoặc 17" inputmode="text"></label><button class="btn ghost" type="submit" style="flex:0 0 auto;align-self:flex-end">Xác nhận</button></form>'+
+  '<button class="btn ghost" data-act="mdemo">Mô phỏng một lượt quét (trình bày)</button>')+
+  res+'</section>'+
+  '<section class="card"><h2 style="color:var(--brand)">Đang trong phòng ăn ('+inside.length+')</h2><div class="list">'+(insHtml||'<p class="sub">Không có học sinh nào trong phòng ăn.</p>')+'</div></section>'+
+  (r.closed&&r.report?'<section class="card" style="grid-column:1/-1"><div class="row" style="justify-content:space-between"><h2 style="flex:none">Báo cáo '+mn+'</h2><button class="btn ghost" style="flex:none" data-act="copy">Sao chép để gửi Zalo</button></div><pre class="rep" id="rep">'+esc(r.report)+'</pre></section>':'')+
+  '<section class="card"><h2 style="color:var(--b)">Chưa vào phòng ăn ('+notIn.length+')</h2><div class="list">'+(notHtml||'<p class="sub">Cả lớp đã vào phòng ăn.</p>')+'</div>'+
+  (r.closed?'':'<button class="btn big" data-act="mclose">Chốt '+mn+' &amp; gửi báo cáo</button>')+'</section>'+
+  '<section class="card"><h2 style="color:var(--ok)">Đã ăn xong ('+done.length+')</h2><div class="list">'+(doneHtml||'<p class="sub">Chưa có học sinh nào ra.</p>')+'</div></section></div>';
 }
 
 function vLeave(){
@@ -300,7 +377,7 @@ function render(){
   const app=document.getElementById('app');
   if(!S.login){app.innerHTML=vLogin();return;}
   let v=location.hash.slice(1);if(!NAV.some(n=>n[0]===v))v='tong-quan';
-  const body={'tong-quan':vHome,'diem-danh':vScan,'phieu-phep':vLeave,'vi-pham':vVio,'the-qr':vCards}[v]();
+  const body={'tong-quan':vHome,'diem-danh':vScan,'gio-an':vMeal,'phieu-phep':vLeave,'vi-pham':vVio,'the-qr':vCards}[v]();
   app.innerHTML='<div class="shell"><nav class="side" aria-label="Điều hướng"><div class="logo"><i>'+ic('card',22).replace('currentColor','#0F2744')+'</i><div><b>Điểm danh QR</b><small>Cổng giáo viên</small></div></div>'+
   '<div class="nav">'+NAV.map(n=>'<a href="#'+n[0]+'" class="'+(n[0]===v?'on':'')+'"'+(n[0]===v?' aria-current="page"':'')+'>'+ic(n[2],18)+n[1]+'</a>').join('')+'</div>'+
   '<div class="me"><div class="av">TT</div><div style="flex:1">Lê Thu Trang<small>GVCN 10B · chỉ xem lớp mình</small></div></div><button class="linkbtn" data-act="logout">Đăng xuất</button></nav>'+
@@ -309,19 +386,52 @@ function render(){
 }
 
 /* ---------- scanning ---------- */
+/* đọc thẻ / mã nhập tay → {s} hoặc {err:{title,msg}} — dùng chung cho điểm danh và giờ ăn */
+function parseCard(text,manual){
+  if(manual){let c=text.trim().toUpperCase();if(/^\d+$/.test(c))c='10B-'+c.padStart(3,'0');const s=stu(c);
+    return s?{s}:{err:{title:'Không tìm thấy mã '+text,msg:'Kiểm tra lại mã học sinh lớp 10B.'}};}
+  const m=/^QRDD\|([^|]+)\|v(\d+)$/.exec(text.trim());
+  if(!m)return {err:{title:'Mã QR không hợp lệ',msg:'Đây không phải thẻ học sinh của trường.'}};
+  const s=stu(m[1]);
+  if(!s)return {err:{title:'Học sinh không thuộc lớp 10B',msg:'Mã '+m[1]+' thuộc lớp khác.'}};
+  if(+m[2]!==s.cardV)return {err:{title:'Thẻ cũ đã bị khoá',msg:s.name+' đã được cấp thẻ mới (v'+s.cardV+'). Thu lại thẻ này.'}};
+  return {s};
+}
 function handleCode(text,manual){
   const t=today(),r=rec(t,sess);
   if(r.sent){last={ok:false,title:'Buổi này đã gửi báo cáo',msg:'Bấm “Mở lại” nếu cần sửa.',warn:true};return render();}
-  let s=null;
-  if(manual){let c=text.trim().toUpperCase();if(/^\d+$/.test(c))c='10B-'+c.padStart(3,'0');s=stu(c);
-    if(!s){last={ok:false,title:'Không tìm thấy mã '+text,msg:'Kiểm tra lại mã học sinh lớp 10B.'};return render();}}
-  else{const m=/^QRDD\|([^|]+)\|v(\d+)$/.exec(text.trim());
-    if(!m){last={ok:false,title:'Mã QR không hợp lệ',msg:'Đây không phải thẻ học sinh của trường.'};return render();}
-    s=stu(m[1]);
-    if(!s){last={ok:false,title:'Học sinh không thuộc lớp 10B',msg:'Mã '+m[1]+' thuộc lớp khác.'};return render();}
-    if(+m[2]!==s.cardV){last={ok:false,title:'Thẻ cũ đã bị khoá',msg:s.name+' đã được cấp thẻ mới (v'+s.cardV+'). Thu lại thẻ này.'};return render();}}
+  const p=parseCard(text,manual);if(p.err){last=Object.assign({ok:false},p.err);return render();}
+  const s=p.s;
   if(r.present[s.id]){last={ok:false,title:s.name+' đã điểm danh',msg:'Đã quét lúc '+r.present[s.id]+'.',warn:true};return render();}
   r.present[s.id]=hm();delete r.absent[s.id];last={ok:true,id:s.id,time:r.present[s.id]};save();render();
+}
+/* giờ ăn: quét lần 1 = vào, lần 2 = ra; chặn quét trùng trong 1 phút sau khi vào */
+function handleMeal(text,manual,demo){
+  const t=today(),r=mrec(t,meal);
+  if(r.closed){mlast={ok:false,warn:true,title:'Bữa này đã chốt',msg:'Bấm “Mở lại” nếu cần sửa.'};return render();}
+  const p=parseCard(text,manual);if(p.err){mlast=Object.assign({ok:false},p.err);return render();}
+  const s=p.s,g=r.log[s.id],now=Date.now();
+  if(!g){r.log[s.id]={in:hm(),it:now};delete r.skip[s.id];mlast={ok:true,id:s.id,dir:'in',time:r.log[s.id].in};}
+  else if(!g.out){
+    if(!demo&&now-g.it<6e4){mlast={ok:false,warn:true,title:s.name+' vừa quét vào',msg:'Đã vào lúc '+g.in+'. Quét lại khi học sinh ra khỏi phòng ăn.'};return render();}
+    g.out=hm();g.ot=now;mlast={ok:true,id:s.id,dir:'out',time:g.out,dur:minsOf(g.ot-g.it)};}
+  else{mlast={ok:false,warn:true,title:s.name+' đã ăn xong',msg:'Vào '+g.in+' · ra '+g.out+'. Không vào lại trong bữa này.'};return render();}
+  save();render();
+}
+function buildMealReport(){
+  const t=today(),r=mpeek(t,meal);
+  const ate=S.students.filter(s=>r.log[s.id]);
+  const dur=s=>minsOf(r.log[s.id].ot-r.log[s.id].it);
+  const avg=ate.length?Math.round(ate.reduce((a,s)=>a+dur(s),0)/ate.length):0;
+  const sk=S.students.filter(s=>!r.log[s.id]&&(leaveOf(s.id,t)||r.skip[s.id]));
+  const no=S.students.filter(s=>!r.log[s.id]&&!leaveOf(s.id,t)&&!r.skip[s.id]);
+  const ov=ate.filter(s=>dur(s)>=MAXMIN);
+  let out='BÁO CÁO '+mealName(meal).toUpperCase()+' – LỚP 10B\nNgày '+ddmm(t)+'/'+t.slice(0,4)+' (chốt lúc '+hm()+')\nSĩ số: '+S.students.length+' | Đã ăn: '+ate.length+' | Cắt cơm/có phép: '+sk.length+' | Không đến ăn: '+no.length;
+  if(ate.length)out+='\nThời gian ăn trung bình: '+avg+' phút';
+  if(sk.length)out+='\n\nCắt cơm / có phép:\n'+sk.map(s=>{const l=leaveOf(s.id,t);return '- '+s.name+(l?' (phiếu #'+l.id+')':' (báo cắt cơm)')}).join('\n');
+  if(no.length)out+='\n\nKhông đến ăn, không báo:\n'+no.map(s=>'- '+s.name+' – Phòng '+s.room).join('\n');
+  if(ov.length)out+='\n\nỞ phòng ăn quá '+MAXMIN+' phút:\n'+ov.map(s=>'- '+s.name+' ('+dur(s)+' phút)').join('\n');
+  return out+'\n\nGVCN: Lê Thu Trang';
 }
 function loadImg(file){return new Promise((ok,no)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=u;});}
 async function decode(file){
@@ -348,7 +458,11 @@ function buildReport(){
 }
 
 /* ---------- events ---------- */
-window.addEventListener('hashchange',()=>{last=null;report=null;render();window.scrollTo(0,0);});
+window.addEventListener('hashchange',()=>{last=null;report=null;mlast=null;render();window.scrollTo(0,0);});
+/* cập nhật số phút đang ăn mà không vẽ lại trang (tránh mất ảnh đang chụp) */
+setInterval(()=>{const now=Date.now();
+  document.querySelectorAll('[data-since]').forEach(el=>{el.textContent=minsOf(now-+el.dataset.since)+' phút';});
+  document.querySelectorAll('[data-over]').forEach(el=>{el.hidden=minsOf(now-+el.dataset.over)<MAXMIN;});},20000);
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(a==='sess'){sess=b.dataset.k;last=null;report=null;render();}
@@ -359,17 +473,33 @@ document.addEventListener('click',e=>{
   else if(a==='send'){const t=today(),st=stats(t,sess);if(st.pend)return toast('Còn '+st.pend+' học sinh chưa xác nhận lý do vắng');
     rec(t,sess).sent=true;report=buildReport();save();render();toast('Đã gửi báo cáo lên Ban Giám hiệu');}
   else if(a==='reopen'){rec(today(),sess).sent=false;report=null;save();render();}
-  else if(a==='copy'){const txt=report||'';const fb=()=>{const el=document.getElementById('rep');const rg=document.createRange();rg.selectNodeContents(el);const sl=getSelection();sl.removeAllRanges();sl.addRange(rg);toast('Đã chọn nội dung, bấm sao chép trên máy');};
+  else if(a==='meal'){meal=b.dataset.k;mlast=null;render();}
+  else if(a==='mskip'){const r=mrec(today(),meal),id=b.dataset.id;if(r.skip[id])delete r.skip[id];else r.skip[id]=true;save();render();}
+  else if(a==='mout'){const r=mrec(today(),meal),s=stu(b.dataset.id),g=r.log[s.id];if(!g||g.out)return;
+    g.out=hm();g.ot=Date.now();mlast={ok:true,id:s.id,dir:'out',time:g.out,dur:minsOf(g.ot-g.it)};save();render();toast('Đã ghi nhận '+s.name+' ra khỏi phòng ăn');}
+  else if(a==='mundo'){const r=mrec(today(),meal);delete r.log[b.dataset.id];mlast=null;save();render();toast('Đã huỷ lượt vào');}
+  else if(a==='mdemo'){const t=today(),r=mpeek(t,meal);
+    const pend=S.students.filter(s=>!r.log[s.id]&&!r.skip[s.id]&&!leaveOf(s.id,t));
+    const ins=S.students.filter(s=>r.log[s.id]&&!r.log[s.id].out);
+    const pickR=x=>x[Math.floor(Math.random()*x.length)];
+    if(!pend.length&&!ins.length)return toast('Không còn học sinh nào để quét');
+    handleMeal(payload(pend.length&&(!ins.length||Math.random()<0.6)?pickR(pend):pickR(ins)),false,true);}
+  else if(a==='mclose'){const t=today(),st=mstats(t,meal);
+    if(st.inside)return toast('Còn '+st.inside+' học sinh chưa quét ra – bấm “Cho ra” nếu học sinh quên thẻ');
+    const r=mrec(t,meal);r.closed=true;r.report=buildMealReport();mlast=null;save();render();toast('Đã chốt '+mealName(meal).toLowerCase()+', gửi nhà bếp & Ban Giám hiệu');}
+  else if(a==='mreopen'){const r=mrec(today(),meal);r.closed=false;delete r.report;save();render();}
+  else if(a==='copy'){const el=document.getElementById('rep'),txt=el?el.textContent:'';const fb=()=>{const el=document.getElementById('rep');const rg=document.createRange();rg.selectNodeContents(el);const sl=getSelection();sl.removeAllRanges();sl.addRange(rg);toast('Đã chọn nội dung, bấm sao chép trên máy');};
     try{navigator.clipboard.writeText(txt).then(()=>toast('Đã sao chép báo cáo'),fb);}catch(err){fb();}}
   else if(a==='vtype'){vType=+b.dataset.i;render();}
   else if(a==='reissue'){const s=stu(b.dataset.id);s.cardV++;save();document.getElementById('cardgrid').innerHTML=cardGrid();toast('Đã khoá thẻ cũ, cấp thẻ mới v'+s.cardV+' cho '+s.name);}
   else if(a==='logout'){S.login=false;save();render();}
-  else if(a==='reset'){S=seed();S.login=true;save();last=null;report=null;render();toast('Đã đặt lại dữ liệu mẫu');}
+  else if(a==='reset'){S=seed();S.login=true;save();last=null;report=null;mlast=null;render();toast('Đã đặt lại dữ liệu mẫu');}
 });
 document.addEventListener('submit',e=>{
   e.preventDefault();const f=e.target.id;
   if(f==='loginForm'){S.login=true;save();location.hash='tong-quan';render();}
   else if(f==='manual'){const v=document.getElementById('mcode').value;if(v.trim())handleCode(v,true);}
+  else if(f==='mealManual'){const v=document.getElementById('mmcode').value;if(v.trim())handleMeal(v,true);}
   else if(f==='leaveForm'){const from=document.getElementById('lfrom').value,to=document.getElementById('lto').value,reason=document.getElementById('lreason').value.trim();
     if(!from||!to||to<from)return toast('Ngày kết thúc phải sau ngày bắt đầu');if(!reason)return toast('Hãy nhập lý do');
     const days=(new Date(to)-new Date(from))/864e5+1;
@@ -380,6 +510,8 @@ document.addEventListener('submit',e=>{
 document.addEventListener('change',async e=>{
   if(e.target.id==='cam'&&e.target.files[0]){toast('Đang đọc mã QR…');try{const code=await decode(e.target.files[0]);
       if(code)handleCode(code);else{last={ok:false,title:'Không đọc được mã QR',msg:'Chụp gần hơn, đủ sáng, mã nằm giữa khung hình.'};render();}}catch(err){toast('Không mở được ảnh');}}
+  if(e.target.id==='mcam'&&e.target.files[0]){toast('Đang đọc mã QR…');try{const code=await decode(e.target.files[0]);
+      if(code)handleMeal(code);else{mlast={ok:false,title:'Không đọc được mã QR',msg:'Chụp gần hơn, đủ sáng, mã nằm giữa khung hình.'};render();}}catch(err){toast('Không mở được ảnh');}}
   if(e.target.id==='vph'&&e.target.files[0]){try{vPhoto=await shrink(e.target.files[0]);render();}catch(err){toast('Không mở được ảnh');}}
 });
 document.addEventListener('input',e=>{if(e.target.id==='cq'){cardQ=e.target.value;document.getElementById('cardgrid').innerHTML=cardGrid();}});
